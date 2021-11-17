@@ -50,8 +50,13 @@ namespace Three_Dimensional_V2
             // Create any triangles
             tris.Add(new Triangle3(
                 new double[] { 0, 0, 0 }, 
-                new double[] { 100, 10, 150 }, 
-                new double[] { -100, 100, -100 }
+                new double[] { 100, 50, 0 }, 
+                new double[] { 0, 50, 100 }
+            ));
+            tris.Add(new Triangle3(
+                new double[] { 100, 100, 100 },
+                new double[] { 100, 50, 0 },
+                new double[] { 0, 50, 100 }
             ));
         }
 
@@ -69,6 +74,14 @@ namespace Three_Dimensional_V2
                     {
                         camera.position[0] += 5;
                     }
+                    if (keys[16])
+                    {
+                        camera.position[1] -= 5;
+                    }
+                    if (keys[32])
+                    {
+                        camera.position[1] += 5;
+                    }
                     if (keys[87])
                     {
                         camera.position[2] -= 5;
@@ -79,12 +92,24 @@ namespace Three_Dimensional_V2
                     }
                     if (keys[37])
                     {
-                        camera.dir.X -= 5;
+                        camera.dir.X += 5;
                     }
                     if (keys[39])
                     {
-                        camera.dir.X += 5;
+                        camera.dir.X -= 5;
                     }
+                    if (keys[38])
+                    {
+                        camera.dir.Y -= 5;
+                    }
+                    if (keys[40])
+                    {
+                        camera.dir.Y += 5;
+                    }
+
+                    // limit camera direction y and keep camera direction x on a 0 - 360
+                    camera.dir.Y = camera.dir.Y > 90 ? 90 : (camera.dir.Y < -90 ? -90 : camera.dir.Y);
+                    camera.dir.X = camera.dir.X >= 360 ? camera.dir.X - 360 : (camera.dir.X < 0 ? camera.dir.X + 360 : camera.dir.X);
                     break;
                 case "3d":
 
@@ -123,35 +148,110 @@ namespace Three_Dimensional_V2
         /** 2D PAINT FUNCTION **/
         private void Mode2d(PaintEventArgs e)
         {
-            // Player
+            // Player Circle
             e.Graphics.TranslateTransform(200, 225);
+            e.Graphics.FillEllipse(new SolidBrush(Color.Black), -5, -5, 10, 10);
+
+            // Camera variables for simplicity
             double cameraX = camera.position[0];
             double cameraY = camera.position[1];
             double cameraZ = camera.position[2];
-            e.Graphics.FillEllipse(new SolidBrush(Color.Black), -5, -5, 10, 10);
 
-
-            // Triangles
+            // Triangles TopDown
             foreach (Triangle3 tri in tris)
             {
-                double[][] newPs = new double[3][3];
+                // Arrays to draw them top down
+                double[][] newPs = new double[3][];
+                newPs[0] = new double[3];
+                newPs[1] = new double[3];
+                newPs[2] = new double[3];
+
+                // i is to count which point we're on
                 int i = 0;
+
+                // For each point in the triangle
                 foreach(double[] point in tri.ps)
                 {
                     double x = point[0]; // Horizontal
                     double y = point[1]; // Vertical
                     double z = point[2]; // Horizontal 2
 
-                    double distXZ = Math.Sqrt(Math.Pow((x - cameraX), 2) + Math.Pow((z - cameraZ), 2)) * 2;
-                    double dirXZ = Math.Atan2(z - cameraZ, x - cameraX);
-                    e.Graphics.DrawEllipse(new Pen(Color.Gray, 2), Convert.ToSingle(-distXZ / 2), Convert.ToSingle(-distXZ / 2), Convert.ToSingle(distXZ), Convert.ToSingle(distXZ));
+                    // Calculate distance along X and Z axis
+                    double distXZ = Math.Sqrt(Math.Pow((x - cameraX), 2) + Math.Pow((z - cameraZ), 2));
 
-                    newPs[i][0] = Math.Cos(dirXZ / (180 / 3.14)) * distXZ;
-                    newPs[i][2] = Math.Sin(dirXZ / (180 / 3.14)) * distXZ;
+                    // Calculate direction along X and Z axis
+                    double dirXZ = Math.Atan2(cameraZ - z, cameraX - x) - (camera.dir.X / (180 / 3.14));
+
+                    while (dirXZ * (180 / 3.14) >= 360)
+                    {
+                        dirXZ -= 360 / (180 / 3.14);
+                    }
+                    while (dirXZ * (180 / 3.14) < 0)
+                    {
+                        dirXZ += 360 / (180 / 3.14);
+                    }
+
+                    // Draw circle of distance
+                    e.Graphics.DrawEllipse(new Pen(Color.Gray, 2), Convert.ToSingle(-distXZ), Convert.ToSingle(-distXZ), Convert.ToSingle(distXZ * 2), Convert.ToSingle(distXZ * 2));
+
+                    // Draw fov lines
+                    e.Graphics.DrawLine(new Pen(Color.Yellow, 2), 0, 0, Convert.ToSingle(distXZ), 0);
+                    e.Graphics.DrawLine(new Pen(Color.Red, 2), 0, 0, Convert.ToSingle(Math.Cos(-camera.fov / (180 / 3.14)) * distXZ), Convert.ToSingle(Math.Sin(-camera.fov / (180 / 3.14)) * distXZ));
+                    e.Graphics.DrawLine(new Pen(Color.Blue, 2), 0, 0, Convert.ToSingle(Math.Cos(camera.fov / (180 / 3.14)) * distXZ), Convert.ToSingle(Math.Sin(camera.fov / (180 / 3.14)) * distXZ));
+
+
+
+                    newPs[i][0] = Math.Cos(dirXZ) * (distXZ);
+                    newPs[i][2] = Math.Sin(dirXZ) * (distXZ);
+
+                    e.Graphics.DrawLine(new Pen(Color.Green, 2), 0, 0, Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
+                    e.Graphics.DrawString(Convert.ToSingle(dirXZ).ToString(), DefaultFont, new SolidBrush(Color.Green), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
 
                     i ++;
                 }
                 e.Graphics.DrawPolygon(new Pen(Color.Blue, 2), new PointF[] { 
+                    new PointF(Convert.ToSingle(newPs[0][0]) , Convert.ToSingle(newPs[0][2])),
+                    new PointF(Convert.ToSingle(newPs[1][0]) , Convert.ToSingle(newPs[1][2])),
+                    new PointF(Convert.ToSingle(newPs[2][0]) , Convert.ToSingle(newPs[2][2]))
+                });
+            }
+
+            e.Graphics.TranslateTransform(400, 0);
+            e.Graphics.FillEllipse(new SolidBrush(Color.Black), -5, -5, 10, 10);
+
+            // Triangles TopDown
+            foreach (Triangle3 tri in tris)
+            {
+                double[][] newPs = new double[3][];
+                newPs[0] = new double[3];
+                newPs[1] = new double[3];
+                newPs[2] = new double[3];
+
+                int i = 0;
+                foreach (double[] point in tri.ps)
+                {
+                    double x = point[0]; // Horizontal
+                    double y = point[1]; // Vertical
+                    double z = point[2]; // Horizontal 2
+
+                    double distXZ = Math.Sqrt(Math.Pow((x - cameraX), 2) + Math.Pow((z - cameraZ), 2));
+                    double distXYZ = Math.Sqrt(Math.Pow(distXZ, 2) + Math.Pow(y - cameraY, 2));
+
+                    double dirY = Math.Atan2(cameraY - y, distXZ) - (camera.dir.Y / (180 / 3.14));
+                    e.Graphics.DrawEllipse(new Pen(Color.Gray, 2), Convert.ToSingle(-distXYZ), Convert.ToSingle(-distXYZ), Convert.ToSingle(distXYZ * 2), Convert.ToSingle(distXYZ * 2));
+                    e.Graphics.DrawLine(new Pen(Color.Yellow, 3), 0, 0, Convert.ToSingle(distXYZ), 0);
+                    e.Graphics.DrawLine(new Pen(Color.Red, 3), 0, 0, Convert.ToSingle(Math.Cos(-camera.fov / (180 / 3.14)) * distXYZ), Convert.ToSingle(Math.Sin(-camera.fov / (180 / 3.14)) * distXYZ));
+                    e.Graphics.DrawLine(new Pen(Color.Blue, 3), 0, 0, Convert.ToSingle(Math.Cos(camera.fov / (180 / 3.14)) * distXYZ), Convert.ToSingle(Math.Sin(camera.fov / (180 / 3.14)) * distXYZ));
+
+                    newPs[i][0] = Math.Cos(dirY) * (distXYZ);
+                    newPs[i][2] = Math.Sin(dirY) * (distXYZ);
+
+                    e.Graphics.DrawLine(new Pen(Color.Green, 2), 0, 0, Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
+                    e.Graphics.DrawString(Convert.ToSingle(dirY).ToString(), DefaultFont, new SolidBrush(Color.Green), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
+
+                    i++;
+                }
+                e.Graphics.DrawPolygon(new Pen(Color.Blue, 2), new PointF[] {
                     new PointF(Convert.ToSingle(newPs[0][0]) , Convert.ToSingle(newPs[0][2])),
                     new PointF(Convert.ToSingle(newPs[1][0]) , Convert.ToSingle(newPs[1][2])),
                     new PointF(Convert.ToSingle(newPs[2][0]) , Convert.ToSingle(newPs[2][2]))
