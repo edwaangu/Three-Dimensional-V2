@@ -17,6 +17,10 @@ namespace Three_Dimensional_V2
      * IMPORTANT FOR ME TO READ: X is length, Y is height, Z is depth!!!!!!!!
      *   ^ I mixed up Y and Z multiple times, main reason why I have restarted
      *   ^ Also learned that Cos is used for X and not Y in math class
+     *   
+     * Version v2.0.1: (Nov 17th)
+     * - Finished Top down and side view mode
+     * - Ready to start 3d
      * 
      * Version v2.0.0: (Nov 16th)
      * - Basis on Triangles
@@ -47,7 +51,18 @@ namespace Three_Dimensional_V2
             // Initalization, don't remove this!
             InitializeComponent();
 
-            // Create any triangles
+            // Create any triangles here:
+            tris.Add(new Triangle3(
+                new double[] { -100, 0, 0 },
+                new double[] { -100, 100, 0 },
+                new double[] { -100, 100, 100 }
+            ));
+            tris.Add(new Triangle3(
+                new double[] { -100, 100, 100 },
+                new double[] { -100, 100, 0 },
+                new double[] { -100, 100, 100 }
+            ));
+
             tris.Add(new Triangle3(
                 new double[] { 0, 0, 0 }, 
                 new double[] { 100, 50, 0 }, 
@@ -66,6 +81,7 @@ namespace Three_Dimensional_V2
             switch (mode)
             {
                 case "2d":
+                    // Key presses to move WEST EAST UP DOWN NORTH SOUTH
                     if (keys[65])
                     {
                         camera.position[0] -= 5;
@@ -90,6 +106,8 @@ namespace Three_Dimensional_V2
                     {
                         camera.position[2] += 5;
                     }
+                    
+                    // Key presses to turn direction left and right
                     if (keys[37])
                     {
                         camera.dir.X += 5;
@@ -98,6 +116,8 @@ namespace Three_Dimensional_V2
                     {
                         camera.dir.X -= 5;
                     }
+                    
+                    // Key press to turn direction up and down
                     if (keys[38])
                     {
                         camera.dir.Y -= 5;
@@ -148,8 +168,10 @@ namespace Three_Dimensional_V2
         /** 2D PAINT FUNCTION **/
         private void Mode2d(PaintEventArgs e)
         {
-            // Player Circle
+            // Transformation to 1/4th of the screen width and 1/2th of the screen height
             e.Graphics.TranslateTransform(200, 225);
+
+            // Player Circle
             e.Graphics.FillEllipse(new SolidBrush(Color.Black), -5, -5, 10, 10);
 
             // Camera variables for simplicity
@@ -182,6 +204,7 @@ namespace Three_Dimensional_V2
                     // Calculate direction along X and Z axis
                     double dirXZ = Math.Atan2(cameraZ - z, cameraX - x) - (camera.dir.X / (180 / 3.14));
 
+                    // Limit direction to 0 - 360
                     while (dirXZ * (180 / 3.14) >= 360)
                     {
                         dirXZ -= 360 / (180 / 3.14);
@@ -199,16 +222,21 @@ namespace Three_Dimensional_V2
                     e.Graphics.DrawLine(new Pen(Color.Red, 2), 0, 0, Convert.ToSingle(Math.Cos(-camera.fov / (180 / 3.14)) * distXZ), Convert.ToSingle(Math.Sin(-camera.fov / (180 / 3.14)) * distXZ));
                     e.Graphics.DrawLine(new Pen(Color.Blue, 2), 0, 0, Convert.ToSingle(Math.Cos(camera.fov / (180 / 3.14)) * distXZ), Convert.ToSingle(Math.Sin(camera.fov / (180 / 3.14)) * distXZ));
 
-
-
+                    // Get positions on screen
                     newPs[i][0] = Math.Cos(dirXZ) * (distXZ);
                     newPs[i][2] = Math.Sin(dirXZ) * (distXZ);
 
+                    // Line pointing from player to point
                     e.Graphics.DrawLine(new Pen(Color.Green, 2), 0, 0, Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
+
+                    // Text containing direction based on player direction
                     e.Graphics.DrawString(Convert.ToSingle(dirXZ).ToString(), DefaultFont, new SolidBrush(Color.Green), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
 
+                    // Increase i
                     i ++;
                 }
+
+                // Draw shape
                 e.Graphics.DrawPolygon(new Pen(Color.Blue, 2), new PointF[] { 
                     new PointF(Convert.ToSingle(newPs[0][0]) , Convert.ToSingle(newPs[0][2])),
                     new PointF(Convert.ToSingle(newPs[1][0]) , Convert.ToSingle(newPs[1][2])),
@@ -216,17 +244,23 @@ namespace Three_Dimensional_V2
                 });
             }
 
+
+            // Transformation of another screen width half
             e.Graphics.TranslateTransform(400, 0);
+
+            // Draw Player Again
             e.Graphics.FillEllipse(new SolidBrush(Color.Black), -5, -5, 10, 10);
 
-            // Triangles TopDown
+            // Triangles From Side
             foreach (Triangle3 tri in tris)
             {
+                // Arrays to draw the from side
                 double[][] newPs = new double[3][];
                 newPs[0] = new double[3];
                 newPs[1] = new double[3];
                 newPs[2] = new double[3];
 
+                // i is to count which point we're on
                 int i = 0;
                 foreach (double[] point in tri.ps)
                 {
@@ -234,23 +268,38 @@ namespace Three_Dimensional_V2
                     double y = point[1]; // Vertical
                     double z = point[2]; // Horizontal 2
 
+                    // Calculate distance along X and Z axis
                     double distXZ = Math.Sqrt(Math.Pow((x - cameraX), 2) + Math.Pow((z - cameraZ), 2));
+
+                    // Calculate distance between XZ Axis and Y Axis
                     double distXYZ = Math.Sqrt(Math.Pow(distXZ, 2) + Math.Pow(y - cameraY, 2));
 
+                    // Calculate direction based on Y and XZ distance
                     double dirY = Math.Atan2(cameraY - y, distXZ) - (camera.dir.Y / (180 / 3.14));
+
+                    // Draw circle of distance
                     e.Graphics.DrawEllipse(new Pen(Color.Gray, 2), Convert.ToSingle(-distXYZ), Convert.ToSingle(-distXYZ), Convert.ToSingle(distXYZ * 2), Convert.ToSingle(distXYZ * 2));
+
+                    // Draw fov lines
                     e.Graphics.DrawLine(new Pen(Color.Yellow, 3), 0, 0, Convert.ToSingle(distXYZ), 0);
                     e.Graphics.DrawLine(new Pen(Color.Red, 3), 0, 0, Convert.ToSingle(Math.Cos(-camera.fov / (180 / 3.14)) * distXYZ), Convert.ToSingle(Math.Sin(-camera.fov / (180 / 3.14)) * distXYZ));
                     e.Graphics.DrawLine(new Pen(Color.Blue, 3), 0, 0, Convert.ToSingle(Math.Cos(camera.fov / (180 / 3.14)) * distXYZ), Convert.ToSingle(Math.Sin(camera.fov / (180 / 3.14)) * distXYZ));
 
+                    // Set positions on screen
                     newPs[i][0] = Math.Cos(dirY) * (distXYZ);
                     newPs[i][2] = Math.Sin(dirY) * (distXYZ);
 
+                    // Line pointing from player to point
                     e.Graphics.DrawLine(new Pen(Color.Green, 2), 0, 0, Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
+
+                    // Text containing information about direction based on player direction
                     e.Graphics.DrawString(Convert.ToSingle(dirY).ToString(), DefaultFont, new SolidBrush(Color.Green), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
 
+                    // Increase i
                     i++;
                 }
+
+                // Draw triangle
                 e.Graphics.DrawPolygon(new Pen(Color.Blue, 2), new PointF[] {
                     new PointF(Convert.ToSingle(newPs[0][0]) , Convert.ToSingle(newPs[0][2])),
                     new PointF(Convert.ToSingle(newPs[1][0]) , Convert.ToSingle(newPs[1][2])),
@@ -258,6 +307,7 @@ namespace Three_Dimensional_V2
                 });
             }
 
+            // End transform
             e.Graphics.ResetTransform();
         }
 
