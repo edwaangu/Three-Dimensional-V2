@@ -18,6 +18,9 @@ namespace Three_Dimensional_V2
      *   ^ I mixed up Y and Z multiple times, main reason why I have restarted
      *   ^ Also learned that Cos is used for X and not Y in math class
      *   
+     * Version v2.0.2: (Nov 23rd)
+     * - THREE DIMENSIONS (Much better!)
+     *   
      * Version v2.0.1: (Nov 17th)
      * - Finished Top down and side view mode
      * - Ready to start 3d
@@ -34,6 +37,7 @@ namespace Three_Dimensional_V2
         /** VARIABLES **/
 
         // Main variables
+        bool oldControls = false;
         string mode = "2d";
         bool[] keys = new bool[256];
 
@@ -57,6 +61,8 @@ namespace Three_Dimensional_V2
                 new double[] { -100, 100, 0 },
                 new double[] { -100, 100, 100 }
             ));
+
+            /*
             tris.Add(new Triangle3(
                 new double[] { -100, 100, 100 },
                 new double[] { -100, 100, 0 },
@@ -72,15 +78,15 @@ namespace Three_Dimensional_V2
                 new double[] { 100, 100, 100 },
                 new double[] { 100, 50, 0 },
                 new double[] { 0, 50, 100 }
-            ));
+            ));*/
         }
 
         /** UPDATE LOOP **/
         private void updateTick_Tick(object sender, EventArgs e)
         {
-            switch (mode)
+            switch (oldControls)
             {
-                case "2d":
+                case true:
                     // Key presses to move WEST EAST UP DOWN NORTH SOUTH
                     if (keys[65])
                     {
@@ -89,14 +95,6 @@ namespace Three_Dimensional_V2
                     if (keys[68])
                     {
                         camera.position[0] += 5;
-                    }
-                    if (keys[16])
-                    {
-                        camera.position[1] -= 5;
-                    }
-                    if (keys[32])
-                    {
-                        camera.position[1] += 5;
                     }
                     if (keys[87])
                     {
@@ -107,34 +105,63 @@ namespace Three_Dimensional_V2
                         camera.position[2] += 5;
                     }
                     
-                    // Key presses to turn direction left and right
-                    if (keys[37])
-                    {
-                        camera.dir.X += 5;
-                    }
-                    if (keys[39])
-                    {
-                        camera.dir.X -= 5;
-                    }
-                    
-                    // Key press to turn direction up and down
-                    if (keys[38])
-                    {
-                        camera.dir.Y -= 5;
-                    }
-                    if (keys[40])
-                    {
-                        camera.dir.Y += 5;
-                    }
-
-                    // limit camera direction y and keep camera direction x on a 0 - 360
-                    camera.dir.Y = camera.dir.Y > 90 ? 90 : (camera.dir.Y < -90 ? -90 : camera.dir.Y);
-                    camera.dir.X = camera.dir.X >= 360 ? camera.dir.X - 360 : (camera.dir.X < 0 ? camera.dir.X + 360 : camera.dir.X);
                     break;
-                case "3d":
-
+                case false:
+                    if (keys[65])
+                    {
+                        camera.position[0] += -Math.Cos((camera.dir.X - 90) / (180 / 3.14)) * 5;
+                        camera.position[2] += -Math.Sin((camera.dir.X - 90) / (180 / 3.14)) * 5;
+                    }
+                    if (keys[68])
+                    {
+                        camera.position[0] += -Math.Cos((camera.dir.X + 90) / (180 / 3.14)) * 5;
+                        camera.position[2] += -Math.Sin((camera.dir.X + 90) / (180 / 3.14)) * 5;
+                    }
+                    if (keys[87])
+                    {
+                        camera.position[0] += -Math.Cos(camera.dir.X / (180 / 3.14)) * 5;
+                        camera.position[2] += -Math.Sin(camera.dir.X / (180 / 3.14)) * 5;
+                    }
+                    if (keys[83])
+                    {
+                        camera.position[0] += -Math.Cos((camera.dir.X - 180) / (180 / 3.14)) * 5;
+                        camera.position[2] += -Math.Sin((camera.dir.X - 180) / (180 / 3.14)) * 5;
+                    }
                     break;
             }
+            // Move up and down
+            if (keys[16])
+            {
+                camera.position[1] -= 5;
+            }
+            if (keys[32])
+            {
+                camera.position[1] += 5;
+            }
+
+            // Key presses to turn direction left and right
+            if (keys[37])
+            {
+                camera.dir.X += 2;
+            }
+            if (keys[39])
+            {
+                camera.dir.X -= 2;
+            }
+
+            // Key press to turn direction up and down
+            if (keys[38])
+            {
+                camera.dir.Y -= 2;
+            }
+            if (keys[40])
+            {
+                camera.dir.Y += 2;
+            }
+
+            // limit camera direction y and keep camera direction x on a 0 - 360
+            camera.dir.Y = camera.dir.Y > 90 ? 90 : (camera.dir.Y < -90 ? -90 : camera.dir.Y);
+            camera.dir.X = camera.dir.X >= 360 ? camera.dir.X - 360 : (camera.dir.X < 0 ? camera.dir.X + 360 : camera.dir.X);
             this.Refresh();
         }
 
@@ -157,6 +184,10 @@ namespace Three_Dimensional_V2
         private void GameScreen_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             keys[e.KeyValue] = true;
+            if(e.KeyValue == 13)
+            {
+                mode = mode == "2d" ? "3d" : "2d";
+            }
         }
 
         /** KEY RELEASES **/
@@ -229,8 +260,10 @@ namespace Three_Dimensional_V2
                     // Line pointing from player to point
                     e.Graphics.DrawLine(new Pen(Color.Green, 2), 0, 0, Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
 
+                    double inFovX = Math.Tan(dirXZ / 2) / Math.Tan((camera.fov / 2) / (180 / Math.PI));
+
                     // Text containing direction based on player direction
-                    e.Graphics.DrawString(Convert.ToSingle(dirXZ).ToString(), DefaultFont, new SolidBrush(Color.Green), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
+                    e.Graphics.DrawString(Convert.ToSingle(inFovX).ToString(), DefaultFont, new SolidBrush(Color.Green), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
 
                     // Increase i
                     i ++;
@@ -293,7 +326,8 @@ namespace Three_Dimensional_V2
                     e.Graphics.DrawLine(new Pen(Color.Green, 2), 0, 0, Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
 
                     // Text containing information about direction based on player direction
-                    e.Graphics.DrawString(Convert.ToSingle(dirY).ToString(), DefaultFont, new SolidBrush(Color.Green), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
+                    double inFovY = Math.Tan(dirY / 2) / Math.Tan((camera.fov / 2) / (180 / Math.PI));
+                    e.Graphics.DrawString(Convert.ToSingle(Math.Tan(dirY / 2)).ToString(), new Font("Sans Serif", 15, FontStyle.Bold), new SolidBrush(Color.Purple), Convert.ToSingle(newPs[i][0]), Convert.ToSingle(newPs[i][2]));
 
                     // Increase i
                     i++;
@@ -314,7 +348,73 @@ namespace Three_Dimensional_V2
         /** 3D PAINT FUNCTION **/
         private void Mode3d(PaintEventArgs e)
         {
+            // Transform
+            e.Graphics.TranslateTransform(this.Width / 2, this.Height / 2);
 
+            // Camera variables for simplicity
+            double cameraX = camera.position[0];
+            double cameraY = camera.position[1];
+            double cameraZ = camera.position[2];
+
+            // Triangles TopDown
+            foreach (Triangle3 tri in tris)
+            {
+                // Arrays to draw them top down
+                double[][] newPs = new double[3][];
+                newPs[0] = new double[2];
+                newPs[1] = new double[2];
+                newPs[2] = new double[2];
+
+                // i is to count which point we're on
+                int i = 0;
+
+                // For each point in the triangle
+                foreach (double[] point in tri.ps)
+                {
+                    double x = point[0]; // Horizontal
+                    double y = point[1]; // Vertical
+                    double z = point[2]; // Horizontal 2
+
+                    // Calculate distance along X and Z axis
+                    double distXZ = Math.Sqrt(Math.Pow((x - cameraX), 2) + Math.Pow((z - cameraZ), 2));
+
+                    // Calculate direction along X and Z axis
+                    double dirXZ = Math.Atan2(cameraZ - z, cameraX - x) - (camera.dir.X / (180 / 3.14));
+
+                    // Limit direction to 0 - 360
+                    while (dirXZ * (180 / 3.14) >= 360)
+                    {
+                        dirXZ -= 360 / (180 / 3.14);
+                    }
+                    while (dirXZ * (180 / 3.14) < 0)
+                    {
+                        dirXZ += 360 / (180 / 3.14);
+                    }
+
+
+                    // Calculate distance between XZ Axis and Y Axis
+                    double distXYZ = Math.Sqrt(Math.Pow(distXZ, 2) + Math.Pow(y - cameraY, 2));
+
+                    // Calculate direction based on Y and XZ distance
+                    double dirY = Math.Atan2(cameraY - y, distXZ) - (camera.dir.Y / (180 / 3.14));
+
+                    double inFovX = Math.Tan(dirXZ / 2) / Math.Tan((camera.fov / 2) / (180 / Math.PI));
+                    double inFovY = Math.Tan(dirY / 2) / Math.Tan((camera.fov / 2) / (180 / Math.PI));
+
+                    newPs[i][0] = inFovX * this.Width / 2;
+                    newPs[i][1] = inFovY * this.Height / 2;
+
+                    i++;
+                }
+
+                // Draw triangle
+                e.Graphics.DrawPolygon(new Pen(Color.Blue, 2), new PointF[] {
+                    new PointF(Convert.ToSingle(newPs[0][0]) , Convert.ToSingle(newPs[0][1])),
+                    new PointF(Convert.ToSingle(newPs[1][0]) , Convert.ToSingle(newPs[1][1])),
+                    new PointF(Convert.ToSingle(newPs[2][0]) , Convert.ToSingle(newPs[2][1]))
+                });
+            }
+            e.Graphics.ResetTransform();
         }
     }
 }
